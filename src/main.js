@@ -155,12 +155,18 @@ function requestUri({ address, amount, desc, id }) {
   return buildPaymentUri({ address, amount, memo, message: desc || undefined, network: networkOf(address) });
 }
 
-function receipt({ amount, desc, id, uri, payer }) {
+function receipt({ address, amount, desc, id, uri, payer }) {
   return el("article", { class: "receipt" },
     el("p", { class: "receipt-id" }, id),
     el("p", { class: "receipt-amount" }, amount, el("span", {}, " ZEC")),
     desc ? el("p", { class: "receipt-desc" }, desc) : null,
     qrCanvas(uri),
+    el("div", { class: "receipt-address" },
+      el("p", { class: "receipt-address-label" }, payer ? "You're paying" : "Payments go to"),
+      el("code", {}, address),
+      el("p", { class: "receipt-address-hint" },
+        payer ? "Check this matches the address your wallet shows before you send."
+              : "Check this is your own address.")),
     el("p", { class: "receipt-hint" },
       payer ? "Scan with your Zcash wallet, or tap the button below on this phone."
             : "Ask the customer to scan this with their Zcash wallet."));

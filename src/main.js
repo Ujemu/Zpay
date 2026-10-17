@@ -150,11 +150,14 @@ function chargeScreen() {
   amount.focus();
 }
 
-function requestUri({ address, amount, desc, id }) {
-  const memo = desc ? `Zpay ${id}: ${desc}` : `Zpay ${id}`;
-  return buildPaymentUri({ address, amount, memo, message: desc || undefined, network: networkOf(address) });
+function memoText({ desc, id }) {
+  return desc ? `Zpay ${id}: ${desc}` : `Zpay ${id}`;
 }
 
+function requestUri(inv) {
+  return buildPaymentUri({ address: inv.address, amount: inv.amount, memo: memoText(inv),
+    message: inv.desc || undefined, network: networkOf(inv.address) });
+}
 function receipt({ address, amount, desc, id, uri, payer }) {
   return el("article", { class: "receipt" },
     el("p", { class: "receipt-id" }, id),
@@ -197,16 +200,24 @@ function payScreen(encoded) {
       el("h1", {}, "This payment link is broken"),
       el("p", { class: "lead" }, "Part of the link is missing or was changed. Ask the sender to copy the invoice link again.")));
   }
-  const uri = requestUri(inv);
-  const copyReq = el("button", { onclick: (e) => copy(uri, e.currentTarget) }, "Copy payment request");
+   const uri = requestUri(inv);
+  const memo = memoText(inv);
+  const copyAddr = el("button", { onclick: (e) => copy(inv.address, e.currentTarget) }, "Copy address");
+  const copyMemo = el("button", { onclick: (e) => copy(memo, e.currentTarget) }, "Copy memo");
 
   render(header(),
     receipt({ ...inv, uri, payer: true }),
     el("div", { class: "actions" },
-      copyReq,
       el("a", { class: "button primary", href: uri }, "Open in wallet")),
     el("p", { class: "fine center" },
-      "Pay from a shielded wallet such as Zashi. The amount, memo and both addresses stay encrypted on chain."));
+      "Some wallets, like Zodl, only accept payment requests scanned with their own camera. If yours asks you to rescan, open this link on another screen and scan the QR code, or pay manually below."),
+    el("section", { class: "manual" },
+      el("p", { class: "manual-title" }, "Pay manually"),
+      el("p", {}, "Send exactly ", el("strong", {}, `${inv.amount} ZEC`), " to the address above, with this memo:"),
+      el("code", { class: "memo" }, memo),
+      el("div", { class: "actions" }, copyAddr, copyMemo)),
+    el("p", { class: "fine center" },
+      "Pay from a shielded wallet such as Zodl. The amount, memo and both addresses stay encrypted on chain."));
 }
 
 // ---------- routing ----------

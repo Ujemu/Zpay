@@ -59,14 +59,28 @@ function forgetAddress() {
   try { localStorage.removeItem(STORE_KEY); } catch {}
 }
 
+function legacyCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.append(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch {}
+  ta.remove();
+  return ok;
+}
+
 async function copy(text, button) {
   const label = button.textContent;
-  try {
-    await navigator.clipboard.writeText(text);
-    button.textContent = "Copied";
-  } catch {
-    button.textContent = "Couldn't copy";
+  let ok = false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {}
   }
+  if (!ok) ok = legacyCopy(text);
+  button.textContent = ok ? "Copied" : "Couldn't copy";
   setTimeout(() => (button.textContent = label), 1600);
 }
 
@@ -171,7 +185,7 @@ function receipt({ address, amount, desc, id, uri, payer }) {
         payer ? "Check this matches the address your wallet shows before you send."
               : "Check this is your own address.")),
     el("p", { class: "receipt-hint" },
-      payer ? "Scan with your Zcash wallet, or tap the button below on this phone."
+            payer ? "Scan this with your Zcash wallet, or on this phone, use Pay manually below."
             : "Ask the customer to scan this with their Zcash wallet."));
 }
 
@@ -205,17 +219,17 @@ function payScreen(encoded) {
   const copyAddr = el("button", { onclick: (e) => copy(inv.address, e.currentTarget) }, "Copy address");
   const copyMemo = el("button", { onclick: (e) => copy(memo, e.currentTarget) }, "Copy memo");
 
-  render(header(),
+    render(header(),
     receipt({ ...inv, uri, payer: true }),
-    el("div", { class: "actions" },
-      el("a", { class: "button primary", href: uri }, "Open in wallet")),
-    el("p", { class: "fine center" },
-      "Some wallets, like Zodl, only accept payment requests scanned with their own camera. If yours asks you to rescan, open this link on another screen and scan the QR code, or pay manually below."),
     el("section", { class: "manual" },
       el("p", { class: "manual-title" }, "Pay manually"),
       el("p", {}, "Send exactly ", el("strong", {}, `${inv.amount} ZEC`), " to the address above, with this memo:"),
       el("code", { class: "memo" }, memo),
       el("div", { class: "actions" }, copyAddr, copyMemo)),
+    el("p", { class: "fine center" },
+      "Some wallets can open the payment request directly. Zodl can't, for safety, so use the QR code or Pay manually instead."),
+    el("div", { class: "actions" },
+      el("a", { class: "button", href: uri }, "Open in wallet")),
     el("p", { class: "fine center" },
       "Pay from a shielded wallet such as Zodl. The amount, memo and both addresses stay encrypted on chain."));
 }

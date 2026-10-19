@@ -158,3 +158,9 @@ button:focus-visible, .button:focus-visible, .link:focus-visible { outline: 3px 
   word-break: break-all;
   user-select: all;
 }
+/* Outlined link button (Open in wallet) */
+a.button:not(.primary) {
+  color: #f3efe6;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
